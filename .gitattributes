@@ -16,7 +16,7 @@ updater = Updater(TOKEN)
 
 def start(update, context):
     chat = update.effective_chat
-    buttons = [[KeyboardButton('/make_a_note')]]
+    buttons = [[KeyboardButton('/make_a_note')], [KeyboardButton('/check_my_notes')]]
     context.bot.send_message(chat_id=chat.id, text="""Hi there! 
     \ni'm your friend, so you may entrust me the most secret things ;)
     \nI would be glad to listen to you""", reply_markup=ReplyKeyboardMarkup(buttons))
@@ -63,6 +63,27 @@ def second_addnote(update, context):
     well done!""")
     return ConversationHandler.END
 
+
+def cancel(update):
+    update.message.reply_text(
+        'Cancelled by user. Send /make_a_note to start again')
+    return ConversationHandler.END
+
+
+def checking_the_notes(update, context):
+    chat = update.effective_chat
+    try:
+        with open("notes.json") as f:
+            data = list(json.load(f))
+            context.bot.send_message(chat_id=chat.id, text="__________________")
+            for i in data:
+                all_notes = i["note"]
+                context.bot.send_message(chat_id=chat.id, text=f"{all_notes}")
+            context.bot.send_message(chat_id=chat.id, text="__________________")
+    except FileNotFoundError:
+        context.bot.send_message(chat_id=chat.id, text="you haven't added any notes yet")
+
+
 #_________________________________________________________________________________________
 #_________ADDING COMMANDS AND FUNCTIONS___________________________________________________
 
@@ -71,13 +92,15 @@ handler = ConversationHandler(
     entry_points=[CommandHandler('make_a_note', first_addnote)],
     states={
             1: [MessageHandler(Filters.text, second_addnote)]
-    }
+    },
+    fallbacks=[CommandHandler('cancel', cancel)]
 )
 
 
 disp = updater.dispatcher
 disp.add_handler(handler)
 disp.add_handler(CommandHandler("start", start))
+disp.add_handler(CommandHandler("check_my_notes", checking_the_notes))
 updater.start_polling()
 updater.idle()
 #_________________________________________________________________________________________
